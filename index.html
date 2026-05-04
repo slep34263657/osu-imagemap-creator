@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta property="og:title" content="osu! Imagemap Creator">
+  <meta property="og:description" content="A simple web tool to generate imagemap BBCode for osu! profiles.">
+  <meta property="og:type" content="website">
+  <title>osu! imagemap creator</title>
+  <meta name="description" content="Generate imagemap BBCode for osu! profiles." />
+  <meta name="keywords" content="osu, imagemap, bbcode, profile, creator, tool" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link rel="icon" href="/icons/imagemap.ico" type="image/x-icon">
+  <link rel="stylesheet" href="style.css" />
+
+</head>
+<body>
+
+<div id="app">
+
+  <header id="header">
+    <div class="dot"></div>
+    <h1>osu! imagemap creator</h1>
+    <span class="sep"></span>
+    <span style="color: var(--text-muted); font-size: 11px; letter-spacing: 0.06em;">
+    </span>
+    <a href="help.html" class="help-icon" title="Help & Guide" target="_blank">?</a>
+  </header>
+
+  <main id="canvas-area">
+    <div id="empty-state" class="empty-state">
+      <div class="icon">⬚</div>
+      <p>paste an image URL in the sidebar<br>to get started</p>
+    </div>
+    <div id="image-wrapper" style="display:none;">
+      <img id="preview-img" src="" alt="preview" draggable="false" />
+    </div>
+  </main>
+
+  <aside id="sidebar">
+
+    <div class="sidebar-section">
+      <div class="section-title">Image</div>
+      <div class="field">
+        <label for="img-url-input">URL</label>
+        <input type="text" id="img-url-input" placeholder="https://imagehost/image.png..." /> 
+      </div>
+      <button class="btn btn-accent btn-full" id="load-img-btn">Load Image</button>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="section-title">Boxes</div>
+      <button class="btn btn-full" id="add-box-btn">+ Add Box</button>
+      <ul id="box-list"></ul>
+      <p class="no-boxes" id="no-boxes-msg">no boxes yet</p>
+    </div>
+
+    <div class="sidebar-section" id="box-props" style="display:none;">
+      <div class="section-title">Selected Box</div>
+      <div class="field">
+        <label for="box-url">Link URL</label>
+        <input type="text" id="box-url" placeholder="https://osu.ppy.sh/users/..." />
+      </div>
+      <div class="field">
+        <label for="box-title">Hover Text</label>
+        <input type="text" id="box-title" placeholder="My profile" />
+      </div>
+      <button class="btn btn-danger btn-full" id="delete-box-btn">Delete Box</button>
+    </div>
+
+    <div class="sidebar-section" id="output-section">
+      <div class="section-title">BBCode Output</div>
+      <div class="field">
+        <textarea id="bbcode-output" readonly placeholder="[imagemap] will appear here..."></textarea>
+      </div>
+      <button class="btn btn-full" id="copy-btn">Copy BBCode</button>
+      <div style="margin-top:10px; text-align:center;">
+        <a href="https://osu.ppy.sh/wiki/en/BBCode#imagemap" target="_blank"
+           style="color: var(--text-muted); font-size: 10px; letter-spacing:0.06em; text-decoration:none; text-transform:uppercase;">
+          imagemap docs ↗
+        </a>
+      </div>
+    </div>
+
+  </aside>
+
+</div>
+
+<script>
+(function () {
+  let imageURL = '';
+  let boxes = [];
+  let nextId = 1;
+  let selectedId = null;
+
+  const emptyState    = document.getElementById('empty-state');
+  const imageWrapper  = document.getElementById('image-wrapper');
+  const previewImg    = document.getElementById('preview-img');
+  const imgInput      = document.getElementById('img-url-input');
+  const loadImgBtn    = document.getElementById('load-img-btn');
+  const addBoxBtn     = document.getElementById('add-box-btn');
+  const boxList       = document.getElementById('box-list');
+  const noBoxesMsg    = document.getElementById('no-boxes-msg');
+  const boxProps      = document.getElementById('box-props');
+  const boxUrlInput   = document.getElementById('box-url');
+  const boxTitleInput = document.getElementById('box-title');
+  const deleteBoxBtn  = document.getElementById('delete-box-btn');
+  const bbcodeOutput  = document.getElementById('bbcode-output');
+  const copyBtn       = document.getElementById('copy-btn');
+
+  loadImgBtn.addEventListener('click', () => {
+    const url = imgInput.value.trim();
+    if (!url) return;
+    imageURL = url;
+    previewImg.src = url;
+    previewImg.onload = () => {
+      emptyState.style.display = 'none';
+      imageWrapper.style.display = 'inline-block';
+      renderBoxes();
+      generateBBCode();
+    };
+    previewImg.onerror = () => {
+      emptyState.style.display = 'block';
+      imageWrapper.style.display = 'none';
+      alert('Could not load image. Check the URL.');
+    };
+  });
+
+  addBoxBtn.addEventListener('click', () => {
+    if (!imageURL) { alert('Load an image first.'); return; }
+    boxes.push({ id: nextId++, x: 5, y: 5, w: 20, h: 15, url: '', title: '' });
+    renderBoxes();
+    renderBoxList();
+    generateBBCode();
+  });
+
+  deleteBoxBtn.addEventListener('click', () => {
+    if (selectedId === null) return;
+    boxes = boxes.filter(b => b.id !== selectedId);
+    selectedId = null;
+    boxProps.style.display = 'none';
+    renderBoxes();
+    renderBoxList();
+    generateBBCode();
+  });
+
+  boxUrlInput.addEventListener('input', () => {
+    const box = getSelected();
+    if (box) { box.url = boxUrlInput.value; refreshBoxLabel(box); generateBBCode(); }
+  });
+
+  boxTitleInput.addEventListener('input', () => {
+    const box = getSelected();
+    if (box) { box.title = boxTitleInput.value; refreshBoxLabel(box); generateBBCode(); }
+  });
+
+  function getSelected() {
+    return boxes.find(b => b.id === selectedId) || null;
+  }
+
+  function selectBox(id) {
+    selectedId = id;
+    const box = getSelected();
+    if (box) {
+      boxUrlInput.value   = box.url;
+      boxTitleInput.value = box.title;
+      boxProps.style.display = 'block';
+    }
+    document.querySelectorAll('.box').forEach(el => {
+      el.classList.toggle('selected', parseInt(el.dataset.id) === id);
+    });
+    document.querySelectorAll('#box-list li').forEach(el => {
+      el.classList.toggle('selected', parseInt(el.dataset.id) === id);
+    });
+  }
+
+  function renderBoxes() {
+    document.querySelectorAll('.box').forEach(el => el.remove());
+
+    boxes.forEach(box => {
+      const el = document.createElement('div');
+      el.className = 'box' + (box.id === selectedId ? ' selected' : '');
+      el.dataset.id = box.id;
+      el.style.left   = box.x + '%';
+      el.style.top    = box.y + '%';
+      el.style.width  = box.w + '%';
+      el.style.height = box.h + '%';
+
+      const label = document.createElement('div');
+      label.className = 'box-label';
+      label.textContent = box.title || box.url || `box ${box.id}`;
+      el.appendChild(label);
+
+      ['nw','n','ne','e','se','s','sw','w'].forEach(dir => {
+        const h = document.createElement('div');
+        h.className = `handle handle-${dir}`;
+        h.dataset.dir = dir;
+        el.appendChild(h);
+      });
+
+      imageWrapper.insertBefore(el, previewImg);
+      attachDragResize(el, box);
+
+      el.addEventListener('mousedown', (e) => {
+        if (e.target.classList.contains('handle')) return;
+        selectBox(box.id);
+        e.stopPropagation();
+      });
+    });
+  }
+
+  function refreshBoxLabel(box) {
+    const el = document.querySelector(`.box[data-id="${box.id}"] .box-label`);
+    if (el) el.textContent = box.title || box.url || `box ${box.id}`;
+  }
+
+  function attachDragResize(el, box) {
+    el.addEventListener('mousedown', (e) => {
+      if (e.target.classList.contains('handle')) return;
+      e.preventDefault();
+      selectBox(box.id);
+
+      const imgRect = previewImg.getBoundingClientRect();
+      const startX  = e.clientX;
+      const startY  = e.clientY;
+      const origX   = box.x;
+      const origY   = box.y;
+
+      function onMove(e) {
+        const dx = ((e.clientX - startX) / imgRect.width)  * 100;
+        const dy = ((e.clientY - startY) / imgRect.height) * 100;
+        box.x = clamp(origX + dx, 0, 100 - box.w);
+        box.y = clamp(origY + dy, 0, 100 - box.h);
+        el.style.left = box.x + '%';
+        el.style.top  = box.y + '%';
+        generateBBCode();
+      }
+      function onUp() {
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+      }
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+
+    el.querySelectorAll('.handle').forEach(handle => {
+      handle.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        selectBox(box.id);
+
+        const dir     = handle.dataset.dir;
+        const imgRect = previewImg.getBoundingClientRect();
+        const startX  = e.clientX;
+        const startY  = e.clientY;
+        const orig    = { x: box.x, y: box.y, w: box.w, h: box.h };
+
+        function onMove(e) {
+          const dx = ((e.clientX - startX) / imgRect.width)  * 100;
+          const dy = ((e.clientY - startY) / imgRect.height) * 100;
+
+          if (dir.includes('e')) box.w = Math.max(2, orig.w + dx);
+          if (dir.includes('s')) box.h = Math.max(2, orig.h + dy);
+          if (dir.includes('w')) {
+            box.w = Math.max(2, orig.w - dx);
+            box.x = clamp(orig.x + dx, 0, orig.x + orig.w - 2);
+          }
+          if (dir.includes('n')) {
+            box.h = Math.max(2, orig.h - dy);
+            box.y = clamp(orig.y + dy, 0, orig.y + orig.h - 2);
+          }
+
+          el.style.left   = box.x + '%';
+          el.style.top    = box.y + '%';
+          el.style.width  = box.w + '%';
+          el.style.height = box.h + '%';
+          generateBBCode();
+        }
+        function onUp() {
+          document.removeEventListener('mousemove', onMove);
+          document.removeEventListener('mouseup', onUp);
+        }
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
+      });
+    });
+  }
+
+  function renderBoxList() {
+    boxList.innerHTML = '';
+    noBoxesMsg.style.display = boxes.length ? 'none' : 'block';
+
+    boxes.forEach(box => {
+      const li = document.createElement('li');
+      li.dataset.id = box.id;
+      if (box.id === selectedId) li.classList.add('selected');
+
+      const span = document.createElement('span');
+      span.className = 'box-title';
+      span.textContent = box.title || box.url || `box ${box.id}`;
+      li.appendChild(span);
+
+      const del = document.createElement('button');
+      del.className = 'del-btn';
+      del.textContent = 'x';
+      del.title = 'delete';
+      del.addEventListener('click', (e) => {
+        e.stopPropagation();
+        boxes = boxes.filter(b => b.id !== box.id);
+        if (selectedId === box.id) {
+          selectedId = null;
+          boxProps.style.display = 'none';
+        }
+        renderBoxes();
+        renderBoxList();
+        generateBBCode();
+      });
+      li.appendChild(del);
+
+      li.addEventListener('click', () => {
+        selectBox(box.id);
+        renderBoxList();
+      });
+
+      boxList.appendChild(li);
+    });
+  }
+
+  function generateBBCode() {
+    if (!imageURL) { bbcodeOutput.value = ''; return; }
+    const lines = boxes.map(b => {
+      const parts = [
+        toFixed(b.x), toFixed(b.y),
+        toFixed(b.w), toFixed(b.h),
+        b.url || 'https://osu.ppy.sh',
+      ];
+      if (b.title) parts.push(b.title);
+      return parts.join(' ');
+    });
+    bbcodeOutput.value = `[imagemap]\n${imageURL}\n${lines.join('\n')}\n[/imagemap]`;
+  }
+
+  copyBtn.addEventListener('click', () => {
+    if (!bbcodeOutput.value) return;
+    navigator.clipboard.writeText(bbcodeOutput.value).then(() => {
+      copyBtn.textContent = 'Copied!';
+      copyBtn.classList.add('copy-ok');
+      setTimeout(() => {
+        copyBtn.textContent = 'Copy BBCode';
+        copyBtn.classList.remove('copy-ok');
+      }, 3000);
+    }).catch(() => {
+      bbcodeOutput.select();
+      document.execCommand('copy');
+    });
+  });
+
+  previewImg.addEventListener('click', () => {
+    selectedId = null;
+    boxProps.style.display = 'none';
+    document.querySelectorAll('.box').forEach(el => el.classList.remove('selected'));
+    document.querySelectorAll('#box-list li').forEach(el => el.classList.remove('selected'));
+  });
+
+  function clamp(v, min, max) { return Math.min(Math.max(v, min), max); }
+  function toFixed(n) { return parseFloat(n.toFixed(2)); }
+
+})();
+</script>
+</body>
+</html>

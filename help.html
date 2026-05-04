@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta property="og:title" content="imagemap creator - help">
+  <meta property="og:description" content="&gt;_&lt;">
+  <title>Help - osu! imagemap creator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link rel="icon" href="/icons/imagemap.ico" type="image/x-icon">
+  <style>
+    :root {
+      --bg-base:       #0a0a0a;
+      --bg-panel:      #111111;
+      --bg-surface:    #1a1a1a;
+      --bg-hover:      #222222;
+      --border:        #2a2a2a;
+      --border-active: #555555;
+      --accent:        #ff6699;
+      --accent-dim:    #cc3366;
+      --text-primary:  #f0f0f0;
+      --text-muted:    #666666;
+      --text-label:    #999999;
+      --text-body:     #bbbbbb;
+      --step-num-bg:   #1a1a1a;
+      --tag-bg:        #1a1a1a;
+      --tag-border:    #333333;
+      --code-bg:       #0f0f0f;
+      --code-border:   #2a2a2a;
+      --warn-red:      #ff3333;
+      --warn-red-dim:  #cc0000;
+      --warn-bg:       #1a0000;
+      --warn-border:   #440000;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      background: var(--bg-base);
+      color: var(--text-primary);
+      font-family: 'DM Mono', 'Courier New', monospace;
+      font-size: 13px;
+      line-height: 1.7;
+      min-height: 100%;
+    }
+
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .page {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 0 24px 80px;
+    }
+
+    .site-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      height: 48px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 56px;
+    }
+
+    .dot {
+      width: 6px;
+      height: 6px;
+      background: var(--accent);
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .site-header h1 {
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .sep { color: var(--border-active); margin: 0 4px; }
+
+    .back-link {
+      margin-left: auto;
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      text-decoration: none;
+      border: 1px solid var(--border);
+      padding: 4px 10px;
+      border-radius: 2px;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .back-link:hover { color: var(--text-primary); border-color: var(--border-active); text-decoration: none; }
+
+    .page-title {
+      margin-bottom: 8px;
+      font-size: 22px;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      color: var(--text-primary);
+    }
+
+    .page-subtitle {
+      color: var(--text-muted);
+      font-size: 12px;
+      margin-bottom: 56px;
+      letter-spacing: 0.04em;
+    }
+
+    .section {
+      margin-bottom: 56px;
+    }
+
+    .section-label {
+      font-size: 10px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .section-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .steps {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .step {
+      display: grid;
+      grid-template-columns: 40px 1fr;
+      gap: 0 20px;
+      position: relative;
+    }
+
+    .step:not(:last-child) .step-num::after {
+      content: '';
+      position: absolute;
+      left: 19px;
+      top: 36px;
+      width: 1px;
+      height: calc(100% - 16px);
+      background: var(--border);
+    }
+
+    .step-num {
+      position: relative;
+      display: flex;
+      align-items: flex-start;
+      padding-top: 2px;
+    }
+
+    .step-num span {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--step-num-bg);
+      border: 1px solid var(--border-active);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-label);
+      flex-shrink: 0;
+    }
+
+    .step-body {
+      padding-bottom: 32px;
+    }
+
+    .step-title {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-primary);
+      margin-bottom: 6px;
+      padding-top: 4px;
+      letter-spacing: 0.04em;
+    }
+
+    .step-desc {
+      color: var(--text-body);
+      font-size: 12px;
+      line-height: 1.8;
+    }
+
+    .step-desc strong {
+      color: var(--text-primary);
+      font-weight: 500;
+    }
+
+    .step-desc .highlight {
+      color: var(--accent);
+    }
+
+    .code-block {
+      background: var(--code-bg);
+      border: 1px solid var(--code-border);
+      border-radius: 2px;
+      padding: 12px 16px;
+      margin-top: 10px;
+      font-size: 11px;
+      color: var(--text-label);
+      line-height: 1.9;
+      overflow-x: auto;
+      white-space: pre;
+    }
+
+    .code-block .c-accent { color: var(--accent); }
+    .code-block .c-dim    { color: var(--text-muted); }
+
+    .note {
+      margin-top: 12px;
+      padding: 10px 14px;
+      background: var(--bg-surface);
+      border-left: 2px solid var(--accent);
+      font-size: 11px;
+      color: var(--text-body);
+      line-height: 1.7;
+    }
+
+    .note strong {
+      color: var(--accent);
+      font-weight: 500;
+    }
+
+    @keyframes warn-pulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.55; }
+    }
+
+    .warn {
+      margin-top: 10px;
+      padding: 8px 14px;
+      background: var(--warn-bg);
+      border-left: 2px solid var(--warn-red);
+      font-size: 11px;
+      color: var(--warn-red);
+      line-height: 1.7;
+      animation: warn-pulse 2.4s ease-in-out infinite;
+    }
+
+    .hosts-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 4px;
+    }
+
+    .host-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      padding: 16px;
+      text-decoration: none;
+      transition: border-color 0.15s;
+      display: block;
+    }
+
+    .host-card:hover {
+      border-color: var(--accent);
+      text-decoration: none;
+    }
+
+    .host-name {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+      letter-spacing: 0.04em;
+    }
+
+    .host-url {
+      font-size: 10px;
+      color: var(--text-muted);
+      letter-spacing: 0.04em;
+    }
+
+    .host-tag {
+      display: inline-block;
+      margin-top: 8px;
+      font-size: 9px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      background: var(--tag-bg);
+      border: 1px solid var(--tag-border);
+      color: var(--text-muted);
+      padding: 2px 6px;
+      border-radius: 2px;
+    }
+
+    .host-card:hover .host-tag {
+      border-color: var(--accent-dim);
+      color: var(--accent);
+    }
+
+    .faq-item {
+      border-bottom: 1px solid var(--border);
+      padding: 16px 0;
+    }
+
+    .faq-q {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-primary);
+      margin-bottom: 6px;
+      letter-spacing: 0.02em;
+    }
+
+    .faq-a {
+      font-size: 12px;
+      color: var(--text-body);
+      line-height: 1.8;
+    }
+
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border-active); border-radius: 2px; }
+  </style>
+</head>
+<body>
+
+<div class="page">
+
+  <header class="site-header">
+    <div class="dot"></div>
+    <h1>osu! imagemap creator</h1>
+    <span class="sep">/</span>
+    <span style="color: var(--text-muted); font-size: 11px; letter-spacing: 0.06em;">help</span>
+    <a href="index.html" class="back-link">back to tool</a>
+  </header>
+
+  <h2 class="page-title">Guide and Help</h2>
+  <p class="page-subtitle">Everything you need to create a working imagemap for your osu! profile.</p>
+
+  <div class="section">
+    <div class="section-label">Step 0 - Host your image</div>
+
+    <p style="color: var(--text-body); font-size: 12px; margin-bottom: 20px; line-height:1.8;">
+      osu! BBCode requires a <strong style="color:var(--text-primary)">direct image URL</strong>, a link that ends with
+      an image extension like <span style="color:var(--accent)">.png</span> or <span style="color:var(--accent)">.jpg</span>
+      and loads the raw image with no webpage around it. You need to upload your image to a hosting service first.
+    </p>
+
+    <div class="hosts-grid">
+      <a class="host-card" href="https://catbox.moe/" target="_blank">
+        <div class="host-name">Catbox</div>
+        <div class="host-url">catbox.moe</div>
+        <div class="host-tag">recommended</div>
+      </a>
+      <a class="host-card" href="https://postimages.org/" target="_blank">
+        <div class="host-name">Postimages</div>
+        <div class="host-url">postimages.org</div>
+      </a>
+      <a class="host-card" href="https://imgur.com/" target="_blank">
+        <div class="host-name">Imgur</div>
+        <div class="host-url">imgur.com</div>
+      </a>
+    </div>
+
+    <div class="note">
+      <strong>What is a direct image URL?</strong><br>
+      A direct URL points straight to the image file.<br>
+      It usually looks like <span style="color:var(--accent)">https://files.catbox.moe/46ffuo.jpg</span>.
+    </div>
+    <div class="warn">
+      important: image must be less than 4MB to work properly
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">How to use the tool</div>
+
+    <div class="steps">
+
+      <div class="step">
+        <div class="step-num"><span>1</span></div>
+        <div class="step-body">
+          <div class="step-title">Paste your direct image URL</div>
+          <div class="step-desc">
+            In the sidebar, find the <strong>Image</strong> section. Paste your direct image URL into the input field
+            and click <strong>Load Image</strong>. Your image will appear on the canvas.
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num"><span>2</span></div>
+        <div class="step-body">
+          <div class="step-title">Add a clickable box</div>
+          <div class="step-desc">
+            Click <strong>+ Add Box</strong>. A pink-outlined box will appear in the top-left corner of your image.
+            You can add as many boxes as you need, one per clickable area.
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num"><span>3</span></div>
+        <div class="step-body">
+          <div class="step-title">Drag and resize the box</div>
+          <div class="step-desc">
+            Click and drag the box to move it over the area you want to be clickable.
+            Drag any of the <strong>8 edge and corner handles</strong> to resize it precisely.
+            The box will stay within the image boundary.
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num"><span>4</span></div>
+        <div class="step-body">
+          <div class="step-title">Set the link and hover text</div>
+          <div class="step-desc">
+            With a box selected, the <strong>Selected Box</strong> panel appears in the sidebar.<br><br>
+            <strong>Link URL</strong> is where the box links to when clicked, like your osu! profile.<br>
+            <strong>Hover Text</strong> is the tooltip shown when a user hovers over the area.<br><br>
+            Example link: <span class="highlight">https://osu.ppy.sh/users/your_user_id</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num"><span>5</span></div>
+        <div class="step-body">
+          <div class="step-title">Repeat for all areas</div>
+          <div class="step-desc">
+            Add more boxes for any other clickable regions, like social links, collab entries, or friend profiles.
+            Each box is independent. Use the box list in the sidebar to select or delete them.
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num"><span>6</span></div>
+        <div class="step-body">
+          <div class="step-title">Copy the BBCode</div>
+          <div class="step-desc">
+            When you're done, click <strong>Copy BBCode</strong>. The generated code is now in your clipboard,
+            ready to paste into your osu! profile.
+          </div>
+          <div class="code-block"><span class="c-accent">[imagemap]</span>
+<span class="c-dim">https://files.catbox.moe/46ffuo.jpg</span>
+<span class="c-dim">5.00 10.00 40.00 25.00</span> <span class="c-accent">https://osu.ppy.sh/users/123456</span> <span class="c-dim">my profile</span>
+<span class="c-accent">[/imagemap]</span></div>
+          <div class="note">
+            <strong>Format:</strong> each box line is
+            <span style="color:var(--accent)">x y width height url hovertext</span>, all as percentages of the image size.
+            You do not need to edit this manually; the tool generates it for you.
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Putting it in your osu! profile</div>
+
+    <div class="steps">
+
+      <div class="step">
+        <div class="step-num"><span>1</span></div>
+        <div class="step-body">
+          <div class="step-title">Go to your profile</div>
+          <div class="step-desc">
+            Open <a href="https://osu.ppy.sh" target="_blank">osu.ppy.sh</a> and go to your profile page.
+            Click the pencil / edit icon next to your username or bio section.
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num"><span>2</span></div>
+        <div class="step-body">
+          <div class="step-title">Open the "me!" bio section</div>
+          <div class="step-desc">
+            Scroll down to the <strong>"me!"</strong> tab on your profile page (unlocked the first time you get osu! supporter)
+            Click the pencil icon to enter edit mode.
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num"><span>3</span></div>
+        <div class="step-body">
+          <div class="step-title">Paste your BBCode</div>
+          <div class="step-desc">
+            In the text editor, paste the <strong>[imagemap]...[/imagemap]</strong> code you copied from this tool.
+            You can combine it with other BBCode like <span class="highlight">[centre]</span> to centre it on the page.
+          </div>
+          <div class="code-block"><span class="c-dim">[centre]</span>
+<span class="c-accent">[imagemap]</span>
+https://files.catbox.moe/46ffuo.jpg
+5.00 10.00 40.00 25.00 https://osu.ppy.sh/users/34263657 my profile
+<span class="c-accent">[/imagemap]</span>
+<span class="c-dim">[/centre]</span></div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num"><span>4</span></div>
+        <div class="step-body">
+          <div class="step-title">Save and preview</div>
+          <div class="step-desc">
+            Click <strong>Save</strong>. Visit your profile to see the imagemap live.
+            Hover over your boxes to check the tooltips, and click them to confirm the links work.
+            If something looks off, go back to the tool, adjust the boxes, and copy the updated BBCode.
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Common questions</div>
+
+    <div class="faq-item">
+      <div class="faq-q">My image won't load in the tool.</div>
+      <div class="faq-a">
+        Make sure you're using a <strong>direct image URL</strong>. The link should end in <code style="color:var(--accent)">.png</code>,
+        <code style="color:var(--accent)">.jpg</code>, or similar, and open as a raw image when pasted into your browser.
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q">The imagemap shows in the tool but not on osu!</div>
+      <div class="faq-a">
+        osu! requires images to be under 4mb if that isnt the issue then sorry idk.
+      </div>
+    </div>
+
+    <div class="faq-item" style="border-bottom:none;">
+      <div class="faq-q">More info on osu! imagemap BBCode?</div>
+      <div class="faq-a">
+        See the official wiki: <a href="https://osu.ppy.sh/wiki/en/BBCode#imagemap" target="_blank">
+        osu.ppy.sh/wiki/en/BBCode#imagemap</a>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+</body>
+</html>
