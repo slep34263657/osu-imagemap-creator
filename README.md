@@ -1,0 +1,2 @@
+# osu-imagemap-creator
+
