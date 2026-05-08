@@ -12,9 +12,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
-  <link rel="icon" href="icons/imagemap.ico" type="image/x-icon">
+  <link rel="icon" href="/icons/imagemap.ico" type="image/x-icon">
   <link rel="stylesheet" href="style.css" />
-
 </head>
 <body>
 
@@ -23,10 +22,56 @@
   <header id="header">
     <div class="dot"></div>
     <h1>osu! imagemap creator</h1>
-    <span class="sep"></span>
-    <span style="color: var(--text-muted); font-size: 11px; letter-spacing: 0.06em;">
-    </span>
-    <a href="help.html" class="help-icon" title="Help & Guide" target="_blank">?</a>
+
+    <div id="header-tools">
+      <!-- Grid snap: switch + custom stepper -->
+      <div class="snap-control">
+        <button class="snap-switch" id="snap-toggle" title="Toggle grid snap" aria-pressed="false">
+          <span class="snap-track"><span class="snap-thumb"></span></span>
+          <span class="snap-label">Grid Snap</span>
+        </button>
+        <div class="snap-stepper" id="snap-size-row" style="display:none;">
+          <button class="step-btn" id="snap-dec" title="Decrease snap size">−</button>
+          <span class="step-val" id="snap-val">10</span>
+          <span class="step-unit">px</span>
+          <button class="step-btn" id="snap-inc" title="Increase snap size">+</button>
+          <div class="snap-presets" id="snap-presets">
+            <button class="preset-btn" data-val="5">5</button>
+            <button class="preset-btn" data-val="10">10</button>
+            <button class="preset-btn" data-val="25">25</button>
+            <button class="preset-btn" data-val="50">50</button>
+            <button class="preset-btn" data-val="100">100</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Undo / Redo -->
+      <div class="undo-redo-group">
+        <button class="ur-btn" id="undo-btn" title="Undo (Ctrl+Z)" disabled>↩ Undo</button>
+        <button class="ur-btn" id="redo-btn" title="Redo (Ctrl+Y)" disabled>↪ Redo</button>
+      </div>
+
+      <!-- Save/load -->
+      <button class="toggle-pill" id="save-btn" title="Save / Load projects">
+        <span class="pill-dot"></span>Projects
+      </button>
+
+      <!-- GitHub + osu! profile links -->
+      <a href="https://github.com/slep34263657/osu-imagemap-creator" class="meta-icon" title="View on GitHub" target="_blank" rel="noopener">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+          <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38
+            0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13
+            -.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66
+            .07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15
+            -.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09
+            2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82
+            2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01
+            2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
+        </svg>
+      </a>
+      <a href="https://osu.ppy.sh/users/34263657" class="meta-icon meta-osu" title="slep on osu!" target="_blank" rel="noopener">osu!</a>
+      <a href="help.html" class="help-icon" title="Help & Guide" target="_blank">?</a>
+    </div>
   </header>
 
   <main id="canvas-area">
@@ -36,7 +81,10 @@
     </div>
     <div id="image-wrapper" style="display:none;">
       <img id="preview-img" src="" alt="preview" draggable="false" />
+      <canvas id="grid-canvas"></canvas>
     </div>
+    <!-- Pixel coordinate HUD -->
+    <div id="coord-hud">pos <span id="hud-x">0</span>, <span id="hud-y">0</span> &nbsp;·&nbsp; sel <span id="hud-sel">—</span></div>
   </main>
 
   <aside id="sidebar">
@@ -45,14 +93,26 @@
       <div class="section-title">Image</div>
       <div class="field">
         <label for="img-url-input">URL</label>
-        <input type="text" id="img-url-input" placeholder="https://imagehost/image.png..." /> 
+        <input type="text" id="img-url-input" placeholder="https://imagehost/image.png..." />
       </div>
       <button class="btn btn-accent btn-full" id="load-img-btn">Load Image</button>
+      <div class="coord-toggle-row">
+        <button class="coord-toggle" id="px-toggle" title="Show pixel coordinates while hovering">
+          <span class="coord-track"><span class="coord-thumb"></span></span>
+          <span class="coord-label">Coordinates</span>
+        </button>
+      </div>
     </div>
 
     <div class="sidebar-section">
       <div class="section-title">Boxes</div>
-      <button class="btn btn-full" id="add-box-btn">+ Add Box</button>
+      <div class="boxes-toolbar">
+        <button class="btn btn-full" id="add-box-btn">+ Add Box</button>
+        <button class="coord-toggle no-overlap-toggle" id="no-overlap-toggle" title="Prevent boxes from overlapping">
+          <span class="coord-track"><span class="coord-thumb"></span></span>
+          <span class="coord-label">No Overlap</span>
+        </button>
+      </div>
       <ul id="box-list"></ul>
       <p class="no-boxes" id="no-boxes-msg">no boxes yet</p>
     </div>
@@ -67,7 +127,10 @@
         <label for="box-title">Hover Text</label>
         <input type="text" id="box-title" placeholder="My profile" />
       </div>
-      <button class="btn btn-danger btn-full" id="delete-box-btn">Delete Box</button>
+      <div class="btn-row">
+        <button class="btn" id="duplicate-box-btn">Duplicate</button>
+        <button class="btn btn-danger" id="delete-box-btn">Delete</button>
+      </div>
     </div>
 
     <div class="sidebar-section" id="output-section">
@@ -75,7 +138,16 @@
       <div class="field">
         <textarea id="bbcode-output" readonly placeholder="[imagemap] will appear here..."></textarea>
       </div>
-      <button class="btn btn-full" id="copy-btn">Copy BBCode</button>
+      <div class="btn-row" style="margin-bottom:0;">
+        <button class="btn" id="copy-btn">Copy BBCode</button>
+        <button class="btn" id="export-open-btn">Export…</button>
+      </div>
+
+      <!-- Import -->
+      <div class="section-sub">Import / Paste BBCode</div>
+      <textarea class="import-textarea" id="import-input" placeholder="Paste [imagemap]...[\imagemap] here to import"></textarea>
+      <button class="btn btn-full" id="import-btn" style="margin-top:6px;">Import BBCode</button>
+
       <div style="margin-top:10px; text-align:center;">
         <a href="https://osu.ppy.sh/wiki/en/BBCode#imagemap" target="_blank"
            style="color: var(--text-muted); font-size: 10px; letter-spacing:0.06em; text-decoration:none; text-transform:uppercase;">
@@ -85,19 +157,96 @@
     </div>
 
   </aside>
+</div>
 
+<!-- Export Modal -->
+<div class="modal-backdrop" id="export-modal-backdrop">
+  <div class="modal" style="width:420px;">
+    <div class="modal-header">
+      <h2>Export</h2>
+      <button class="modal-close" id="export-modal-close">×</button>
+    </div>
+    <div class="modal-body" style="padding:18px;">
+      <div class="field">
+        <label for="export-name-input">Optional name tag</label>
+        <input type="text" id="export-name-input" placeholder="my-profile, banner, etc." />
+      </div>
+      <p style="font-size:10px;color:var(--text-muted);letter-spacing:0.04em;margin-bottom:14px;line-height:1.7;">
+        Files are named <span style="color:var(--text-label);">YYYY-MM-DD_HH-MM[_name]</span> so they sort chronologically.
+      </p>
+      <div class="export-btn-grid">
+        <button class="btn btn-full export-opt" id="export-txt-btn">
+          <span class="export-icon">📄</span>
+          <span>
+            <span class="export-type">BBCode .txt</span>
+            <span class="export-desc">Ready to paste in osu!</span>
+          </span>
+        </button>
+        <button class="btn btn-full export-opt" id="export-json-btn">
+          <span class="export-icon">📦</span>
+          <span>
+            <span class="export-type">Project .json</span>
+            <span class="export-desc">Full project — reimportable</span>
+          </span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Save / Load Modal -->
+<div class="modal-backdrop" id="modal-backdrop">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Projects</h2>
+      <button class="modal-close" id="modal-close-btn">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="storage-notice">
+        <span class="storage-notice-icon">⚠</span>
+        Projects are saved in your browser's local storage. They will be lost if you clear your browser data, use a private/incognito window, or switch browsers.
+      </div>
+      <div class="save-input-row">
+        <input type="text" id="save-name-input" placeholder="Project name..." />
+        <button class="btn btn-accent" id="save-project-btn">Save Current</button>
+      </div>
+      <div class="saves-grid" id="saves-grid">
+        <div class="no-saves">No saved projects yet.</div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
 (function () {
-  let imageURL = '';
-  let boxes = [];
-  let nextId = 1;
+  /* ── State ── */
+  let imageURL   = '';
+  let boxes      = [];
+  let nextId     = 1;
   let selectedId = null;
+  let snapActive   = false;
+  let snapSize     = 10;   // px
+  let pxMode       = false;
+  let noOverlap    = false;
+  let naturalW     = 0;    // real image pixel dimensions
+  let naturalH     = 0;
 
+  /* ── History (undo/redo) ── */
+  const HIST_MAX = 50;
+  let history     = [];   // array of snapshots (JSON strings of boxes)
+  let historyPos  = -1;   // current position in history
+
+  /* ── DOM refs ── */
   const emptyState    = document.getElementById('empty-state');
   const imageWrapper  = document.getElementById('image-wrapper');
   const previewImg    = document.getElementById('preview-img');
+  const gridCanvas    = document.getElementById('grid-canvas');
+  const coordHud      = document.getElementById('coord-hud');
+  const hudX          = document.getElementById('hud-x');
+  const hudY          = document.getElementById('hud-y');
+  const hudSel        = document.getElementById('hud-sel');
+  const canvasArea    = document.getElementById('canvas-area');
+
   const imgInput      = document.getElementById('img-url-input');
   const loadImgBtn    = document.getElementById('load-img-btn');
   const addBoxBtn     = document.getElementById('add-box-btn');
@@ -107,59 +256,215 @@
   const boxUrlInput   = document.getElementById('box-url');
   const boxTitleInput = document.getElementById('box-title');
   const deleteBoxBtn  = document.getElementById('delete-box-btn');
+  const duplicateBoxBtn = document.getElementById('duplicate-box-btn');
   const bbcodeOutput  = document.getElementById('bbcode-output');
   const copyBtn       = document.getElementById('copy-btn');
+  const importInput   = document.getElementById('import-input');
+  const importBtn     = document.getElementById('import-btn');
 
-  loadImgBtn.addEventListener('click', () => {
-    const url = imgInput.value.trim();
+  const snapToggle    = document.getElementById('snap-toggle');
+  const snapSizeRow   = document.getElementById('snap-size-row');
+  const snapVal       = document.getElementById('snap-val');
+  const snapDec       = document.getElementById('snap-dec');
+  const snapInc       = document.getElementById('snap-inc');
+  const pxToggle      = document.getElementById('px-toggle');
+  const saveBtn       = document.getElementById('save-btn');
+
+  const modalBackdrop   = document.getElementById('modal-backdrop');
+  const modalCloseBtn   = document.getElementById('modal-close-btn');
+  const saveNameInput   = document.getElementById('save-name-input');
+  const saveProjectBtn  = document.getElementById('save-project-btn');
+  const savesGrid       = document.getElementById('saves-grid');
+
+  const undoBtn         = document.getElementById('undo-btn');
+  const redoBtn         = document.getElementById('redo-btn');
+  const noOverlapToggle = document.getElementById('no-overlap-toggle');
+  const snapPresets     = document.getElementById('snap-presets');
+  const exportOpenBtn   = document.getElementById('export-open-btn');
+  const exportModal     = document.getElementById('export-modal-backdrop');
+  const exportModalClose= document.getElementById('export-modal-close');
+  const exportNameInput = document.getElementById('export-name-input');
+  const exportTxtBtn    = document.getElementById('export-txt-btn');
+  const exportJsonBtn   = document.getElementById('export-json-btn');
+
+  /* ── Helpers ── */
+  function clamp(v, min, max) { return Math.min(Math.max(v, min), max); }
+  function toFixed(n, d=2) { return parseFloat(n.toFixed(d)); }
+
+  /** Convert % → natural pixels */
+  function pctToPx(pct, dim) { return Math.round(pct / 100 * dim); }
+  /** Convert natural pixels → % */
+  function pxToPct(px, dim)  { return px / dim * 100; }
+
+  /** Snap a percentage value to the nearest snap grid (in px space) */
+  function snapPct(pct, dim) {
+    if (!snapActive || snapSize < 1) return pct;
+    const px = pctToPx(pct, dim);
+    const snapped = Math.round(px / snapSize) * snapSize;
+    return pxToPct(snapped, dim);
+  }
+
+  /* ── History helpers ── */
+  function snapshot() {
+    // Truncate forward history when a new action is taken
+    history = history.slice(0, historyPos + 1);
+    history.push(JSON.stringify(boxes));
+    if (history.length > HIST_MAX) history.shift();
+    historyPos = history.length - 1;
+    updateUndoRedo();
+  }
+
+  function undo() {
+    if (historyPos <= 0) return;
+    historyPos--;
+    boxes = JSON.parse(history[historyPos]);
+    afterHistoryJump();
+  }
+
+  function redo() {
+    if (historyPos >= history.length - 1) return;
+    historyPos++;
+    boxes = JSON.parse(history[historyPos]);
+    afterHistoryJump();
+  }
+
+  function afterHistoryJump() {
+    // Keep selected if it still exists, else deselect
+    if (selectedId !== null && !boxes.find(b => b.id === selectedId)) {
+      selectedId = null;
+      boxProps.style.display = 'none';
+    } else {
+      const box = getSelected();
+      if (box) { boxUrlInput.value = box.url; boxTitleInput.value = box.title; }
+    }
+    renderBoxes();
+    renderBoxList();
+    generateBBCode();
+    updateUndoRedo();
+  }
+
+  function updateUndoRedo() {
+    undoBtn.disabled = historyPos <= 0;
+    redoBtn.disabled = historyPos >= history.length - 1;
+  }
+
+  /** Format an osu! profile URL to shortened form */
+  function formatURL(url) {
+    // https://osu.ppy.sh/users/12345 → [https://osu.ppy.sh/u/12345](https://osu.ppy.sh/users/12345)
+    const m = url.match(/^(https?:\/\/osu\.ppy\.sh\/users\/)(\d+)(\/.*)?$/);
+    if (m) {
+      const shortURL = `https://osu.ppy.sh/u/${m[2]}`;
+      return `[${shortURL}](${url})`;
+    }
+    return url;
+  }
+
+  /* ── Overlap check ── */
+  function boxesOverlap(a, b) {
+    return !(a.x + a.w <= b.x || b.x + b.w <= a.x ||
+             a.y + a.h <= b.y || b.y + b.h <= a.y);
+  }
+
+  function wouldOverlap(candidate, excludeId) {
+    if (!noOverlap) return false;
+    return boxes.some(b => b.id !== excludeId && boxesOverlap(candidate, b));
+  }
+
+  /* ── Load image ── */
+  function loadImage(url) {
     if (!url) return;
     imageURL = url;
     previewImg.src = url;
     previewImg.onload = () => {
+      naturalW = previewImg.naturalWidth;
+      naturalH = previewImg.naturalHeight;
       emptyState.style.display = 'none';
       imageWrapper.style.display = 'inline-block';
       renderBoxes();
       generateBBCode();
+      drawGrid();
     };
     previewImg.onerror = () => {
       emptyState.style.display = 'block';
       imageWrapper.style.display = 'none';
       alert('Could not load image. Check the URL.');
     };
-  });
+  }
 
+  loadImgBtn.addEventListener('click', () => loadImage(imgInput.value.trim()));
+  imgInput.addEventListener('keydown', e => { if (e.key === 'Enter') loadImage(imgInput.value.trim()); });
+
+  /* ── Add box ── */
   addBoxBtn.addEventListener('click', () => {
     if (!imageURL) { alert('Load an image first.'); return; }
-    boxes.push({ id: nextId++, x: 5, y: 5, w: 20, h: 15, url: '', title: '' });
+    const id = nextId++;
+    boxes.push({ id, x: 5, y: 5, w: 20, h: 15, url: '', title: '' });
+    snapshot();
     renderBoxes();
     renderBoxList();
     generateBBCode();
+    selectBox(id);
   });
 
-  deleteBoxBtn.addEventListener('click', () => {
-    if (selectedId === null) return;
-    boxes = boxes.filter(b => b.id !== selectedId);
-    selectedId = null;
-    boxProps.style.display = 'none';
+  /* ── Duplicate box ── */
+  duplicateBoxBtn.addEventListener('click', () => {
+    const box = getSelected();
+    if (!box) return;
+    const id = nextId++;
+    boxes.push({
+      id,
+      x: clamp(box.x + 2, 0, 100 - box.w),
+      y: clamp(box.y + 2, 0, 100 - box.h),
+      w: box.w, h: box.h,
+      url: box.url, title: box.title
+    });
+    snapshot();
     renderBoxes();
     renderBoxList();
     generateBBCode();
+    selectBox(id);
   });
+
+  /* ── Delete box ── */
+  deleteBoxBtn.addEventListener('click', () => {
+    if (selectedId === null) return;
+    removeBox(selectedId);
+  });
+
+  function removeBox(id) {
+    boxes = boxes.filter(b => b.id !== id);
+    if (selectedId === id) {
+      selectedId = null;
+      boxProps.style.display = 'none';
+    }
+    snapshot();
+    renderBoxes();
+    renderBoxList();
+    generateBBCode();
+  }
+
+  /* ── Box property inputs ── */
+  let propTimer = null;
+  function snapAfterProp() {
+    clearTimeout(propTimer);
+    propTimer = setTimeout(snapshot, 600);
+  }
 
   boxUrlInput.addEventListener('input', () => {
     const box = getSelected();
-    if (box) { box.url = boxUrlInput.value; refreshBoxLabel(box); generateBBCode(); }
+    if (box) { box.url = boxUrlInput.value; refreshBoxLabel(box); generateBBCode(); snapAfterProp(); }
   });
 
   boxTitleInput.addEventListener('input', () => {
     const box = getSelected();
-    if (box) { box.title = boxTitleInput.value; refreshBoxLabel(box); generateBBCode(); }
+    if (box) { box.title = boxTitleInput.value; refreshBoxLabel(box); generateBBCode(); snapAfterProp(); }
   });
 
   function getSelected() {
     return boxes.find(b => b.id === selectedId) || null;
   }
 
+  /* ── Select box ── */
   function selectBox(id) {
     selectedId = id;
     const box = getSelected();
@@ -174,8 +479,18 @@
     document.querySelectorAll('#box-list li').forEach(el => {
       el.classList.toggle('selected', parseInt(el.dataset.id) === id);
     });
+    updateHudSel();
   }
 
+  function deselect() {
+    selectedId = null;
+    boxProps.style.display = 'none';
+    document.querySelectorAll('.box').forEach(el => el.classList.remove('selected'));
+    document.querySelectorAll('#box-list li').forEach(el => el.classList.remove('selected'));
+    hudSel.textContent = '—';
+  }
+
+  /* ── Render boxes ── */
   function renderBoxes() {
     document.querySelectorAll('.box').forEach(el => el.remove());
 
@@ -216,7 +531,9 @@
     if (el) el.textContent = box.title || box.url || `box ${box.id}`;
   }
 
+  /* ── Drag & resize ── */
   function attachDragResize(el, box) {
+    // MOVE
     el.addEventListener('mousedown', (e) => {
       if (e.target.classList.contains('handle')) return;
       e.preventDefault();
@@ -231,20 +548,27 @@
       function onMove(e) {
         const dx = ((e.clientX - startX) / imgRect.width)  * 100;
         const dy = ((e.clientY - startY) / imgRect.height) * 100;
-        box.x = clamp(origX + dx, 0, 100 - box.w);
-        box.y = clamp(origY + dy, 0, 100 - box.h);
+        let nx = toFixed(snapPct(clamp(origX + dx, 0, 100 - box.w), naturalW));
+        let ny = toFixed(snapPct(clamp(origY + dy, 0, 100 - box.h), naturalH));
+        const candidate = { ...box, x: nx, y: ny };
+        if (!wouldOverlap(candidate, box.id)) {
+          box.x = nx; box.y = ny;
+        }
         el.style.left = box.x + '%';
         el.style.top  = box.y + '%';
         generateBBCode();
+        updateHudSel();
       }
       function onUp() {
         document.removeEventListener('mousemove', onMove);
         document.removeEventListener('mouseup', onUp);
+        snapshot();
       }
       document.addEventListener('mousemove', onMove);
       document.addEventListener('mouseup', onUp);
     });
 
+    // RESIZE
     el.querySelectorAll('.handle').forEach(handle => {
       handle.addEventListener('mousedown', (e) => {
         e.preventDefault();
@@ -261,15 +585,22 @@
           const dx = ((e.clientX - startX) / imgRect.width)  * 100;
           const dy = ((e.clientY - startY) / imgRect.height) * 100;
 
-          if (dir.includes('e')) box.w = Math.max(2, orig.w + dx);
-          if (dir.includes('s')) box.h = Math.max(2, orig.h + dy);
+          // Build candidate geometry without touching box yet
+          const c = { x: orig.x, y: orig.y, w: orig.w, h: orig.h };
+          if (dir.includes('e')) c.w = Math.max(1, toFixed(snapPct(orig.w + dx, naturalW)));
+          if (dir.includes('s')) c.h = Math.max(1, toFixed(snapPct(orig.h + dy, naturalH)));
           if (dir.includes('w')) {
-            box.w = Math.max(2, orig.w - dx);
-            box.x = clamp(orig.x + dx, 0, orig.x + orig.w - 2);
+            c.w = Math.max(1, toFixed(snapPct(orig.w - dx, naturalW)));
+            c.x = toFixed(snapPct(clamp(orig.x + dx, 0, orig.x + orig.w - 1), naturalW));
           }
           if (dir.includes('n')) {
-            box.h = Math.max(2, orig.h - dy);
-            box.y = clamp(orig.y + dy, 0, orig.y + orig.h - 2);
+            c.h = Math.max(1, toFixed(snapPct(orig.h - dy, naturalH)));
+            c.y = toFixed(snapPct(clamp(orig.y + dy, 0, orig.y + orig.h - 1), naturalH));
+          }
+
+          // Only apply if it wouldn't overlap another box
+          if (!wouldOverlap(c, box.id)) {
+            box.x = c.x; box.y = c.y; box.w = c.w; box.h = c.h;
           }
 
           el.style.left   = box.x + '%';
@@ -277,10 +608,12 @@
           el.style.width  = box.w + '%';
           el.style.height = box.h + '%';
           generateBBCode();
+          updateHudSel();
         }
         function onUp() {
           document.removeEventListener('mousemove', onMove);
           document.removeEventListener('mouseup', onUp);
+          snapshot();
         }
         document.addEventListener('mousemove', onMove);
         document.addEventListener('mouseup', onUp);
@@ -288,6 +621,64 @@
     });
   }
 
+  /* ── Keyboard nudge ── */
+  document.addEventListener('keydown', (e) => {
+    // Don't fire when typing in an input
+    if (['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) return;
+    if (selectedId === null) return;
+    const box = getSelected();
+    if (!box) return;
+
+    const stepX = snapActive ? snapPct(snapSize, naturalW || 1000) : 0.5;
+    const stepY = snapActive ? snapPct(snapSize, naturalH || 1000) : 0.5;
+
+    const el = document.querySelector(`.box[data-id="${box.id}"]`);
+    let moved = true;
+
+    let nudgeCandidate = { ...box };
+    if (e.key === 'ArrowLeft')  nudgeCandidate.x = toFixed(clamp(box.x - stepX, 0, 100 - box.w));
+    else if (e.key === 'ArrowRight') nudgeCandidate.x = toFixed(clamp(box.x + stepX, 0, 100 - box.w));
+    else if (e.key === 'ArrowUp')    nudgeCandidate.y = toFixed(clamp(box.y - stepY, 0, 100 - box.h));
+    else if (e.key === 'ArrowDown')  nudgeCandidate.y = toFixed(clamp(box.y + stepY, 0, 100 - box.h));
+    else if (e.key === 'Delete' || e.key === 'Backspace') { removeBox(selectedId); return; }
+    else moved = false;
+
+    if (moved && !wouldOverlap(nudgeCandidate, box.id)) {
+      box.x = nudgeCandidate.x; box.y = nudgeCandidate.y;
+    }
+
+    if (moved) {
+      e.preventDefault();
+      if (el) { el.style.left = box.x + '%'; el.style.top = box.y + '%'; }
+      generateBBCode();
+      updateHudSel();
+      snapshot();
+    }
+  });
+
+  /* ── Canvas mouse → pixel HUD ── */
+  imageWrapper.addEventListener('mousemove', (e) => {
+    if (!pxMode || !naturalW) return;
+    const rect = previewImg.getBoundingClientRect();
+    const rx = e.clientX - rect.left;
+    const ry = e.clientY - rect.top;
+    const px = Math.round(rx / rect.width  * naturalW);
+    const py = Math.round(ry / rect.height * naturalH);
+    hudX.textContent = px;
+    hudY.textContent = py;
+  });
+
+  function updateHudSel() {
+    const box = getSelected();
+    if (!box || !pxMode || !naturalW) { hudSel.textContent = '—'; return; }
+    const x = pctToPx(box.x, naturalW);
+    const y = pctToPx(box.y, naturalH);
+    const w = pctToPx(box.w, naturalW);
+    const h = pctToPx(box.h, naturalH);
+    hudSel.textContent = `${x},${y} ${w}×${h}`;
+  }
+
+  /* ── Render box list ── */
   function renderBoxList() {
     boxList.innerHTML = '';
     noBoxesMsg.style.display = boxes.length ? 'none' : 'block';
@@ -302,39 +693,45 @@
       span.textContent = box.title || box.url || `box ${box.id}`;
       li.appendChild(span);
 
+      const actions = document.createElement('div');
+      actions.className = 'list-actions';
+
+      const dup = document.createElement('button');
+      dup.className = 'dup-btn';
+      dup.textContent = '⧉';
+      dup.title = 'duplicate';
+      dup.addEventListener('click', (e) => {
+        e.stopPropagation();
+        selectBox(box.id);
+        duplicateBoxBtn.click();
+      });
+      actions.appendChild(dup);
+
       const del = document.createElement('button');
       del.className = 'del-btn';
-      del.textContent = 'x';
+      del.textContent = '×';
       del.title = 'delete';
       del.addEventListener('click', (e) => {
         e.stopPropagation();
-        boxes = boxes.filter(b => b.id !== box.id);
-        if (selectedId === box.id) {
-          selectedId = null;
-          boxProps.style.display = 'none';
-        }
-        renderBoxes();
-        renderBoxList();
-        generateBBCode();
+        removeBox(box.id);
       });
-      li.appendChild(del);
+      actions.appendChild(del);
+      li.appendChild(actions);
 
-      li.addEventListener('click', () => {
-        selectBox(box.id);
-        renderBoxList();
-      });
-
+      li.addEventListener('click', () => { selectBox(box.id); renderBoxList(); });
       boxList.appendChild(li);
     });
   }
 
+  /* ── Generate BBCode ── */
   function generateBBCode() {
     if (!imageURL) { bbcodeOutput.value = ''; return; }
     const lines = boxes.map(b => {
+      const urlOut = formatURL(b.url || 'https://osu.ppy.sh');
       const parts = [
         toFixed(b.x), toFixed(b.y),
         toFixed(b.w), toFixed(b.h),
-        b.url || 'https://osu.ppy.sh',
+        urlOut,
       ];
       if (b.title) parts.push(b.title);
       return parts.join(' ');
@@ -342,6 +739,7 @@
     bbcodeOutput.value = `[imagemap]\n${imageURL}\n${lines.join('\n')}\n[/imagemap]`;
   }
 
+  /* ── Copy BBCode ── */
   copyBtn.addEventListener('click', () => {
     if (!bbcodeOutput.value) return;
     navigator.clipboard.writeText(bbcodeOutput.value).then(() => {
@@ -357,15 +755,341 @@
     });
   });
 
-  previewImg.addEventListener('click', () => {
+  /* ── Import BBCode ── */
+  importBtn.addEventListener('click', importBBCode);
+
+  function importBBCode() {
+    const raw = importInput.value.trim();
+    if (!raw) return;
+
+    // Strip [imagemap] tags
+    const inner = raw
+      .replace(/\[imagemap\]/i, '')
+      .replace(/\[\/imagemap\]/i, '')
+      .trim();
+
+    const lines = inner.split('\n').map(l => l.trim()).filter(Boolean);
+    if (lines.length < 1) { alert('Could not parse imagemap — invalid format.'); return; }
+
+    // First line = image URL
+    const imgLine = lines[0];
+    const boxLines = lines.slice(1);
+
+    const parsed = [];
+    for (const line of boxLines) {
+      // Handle formatted URL: [short](full) or plain URL
+      // Replace [short](full) with just "full" for parsing
+      const normalized = line.replace(/\[[^\]]*\]\(([^)]+)\)/g, '$1');
+      const parts = normalized.split(/\s+/);
+      if (parts.length < 5) continue;
+      const [xStr, yStr, wStr, hStr, urlStr, ...titleParts] = parts;
+      const x = parseFloat(xStr);
+      const y = parseFloat(yStr);
+      const w = parseFloat(wStr);
+      const h = parseFloat(hStr);
+      if (isNaN(x) || isNaN(y) || isNaN(w) || isNaN(h)) continue;
+      parsed.push({ id: nextId++, x, y, w, h, url: urlStr, title: titleParts.join(' ') });
+    }
+
+    if (!imgLine) { alert('No image URL found.'); return; }
+
+    // Load the image and boxes
+    boxes = parsed;
     selectedId = null;
     boxProps.style.display = 'none';
-    document.querySelectorAll('.box').forEach(el => el.classList.remove('selected'));
-    document.querySelectorAll('#box-list li').forEach(el => el.classList.remove('selected'));
+    imgInput.value = imgLine;
+    loadImage(imgLine);
+    renderBoxList();
+    generateBBCode();
+    importInput.value = '';
+    snapshot();
+  }
+
+  /* ── Deselect on canvas click ── */
+  previewImg.addEventListener('mousedown', deselect);
+  canvasArea.addEventListener('mousedown', (e) => {
+    if (e.target === canvasArea || e.target === emptyState) deselect();
   });
 
-  function clamp(v, min, max) { return Math.min(Math.max(v, min), max); }
-  function toFixed(n) { return parseFloat(n.toFixed(2)); }
+  /* ── Undo / Redo ── */
+  undoBtn.addEventListener('click', undo);
+  redoBtn.addEventListener('click', redo);
+
+  // Ctrl+Z / Ctrl+Y global
+  document.addEventListener('keydown', (e) => {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) { e.preventDefault(); redo(); }
+  });
+
+  /* ── No-overlap toggle ── */
+  noOverlapToggle.addEventListener('click', () => {
+    noOverlap = !noOverlap;
+    noOverlapToggle.classList.toggle('active', noOverlap);
+  });
+
+  /* ── Snap presets ── */
+  snapPresets.querySelectorAll('.preset-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      setSnapSize(parseInt(btn.dataset.val));
+    });
+  });
+
+  /* ── Grid snap toggle ── */
+  snapToggle.addEventListener('click', () => {
+    snapActive = !snapActive;
+    snapToggle.classList.toggle('active', snapActive);
+    snapToggle.setAttribute('aria-pressed', snapActive);
+    snapSizeRow.style.display = snapActive ? 'flex' : 'none';
+  snapPresets.style.display = snapActive ? 'flex' : 'none';
+    snapPresets.style.display = snapActive ? 'flex' : 'none';
+    drawGrid();
+  });
+
+  snapSizeRow.style.display = snapActive ? 'flex' : 'none';
+
+  function setSnapSize(n) {
+    snapSize = Math.max(1, Math.min(500, n));
+    snapVal.textContent = snapSize;
+    drawGrid();
+  }
+
+  snapDec.addEventListener('click', () => setSnapSize(snapSize - (snapSize > 10 ? 5 : 1)));
+  snapInc.addEventListener('click', () => setSnapSize(snapSize + (snapSize >= 10 ? 5 : 1)));
+
+  // also allow scrolling on the value display
+  snapVal.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    setSnapSize(snapSize + (e.deltaY < 0 ? 1 : -1));
+  }, { passive: false });
+
+  /* ── Pixel mode toggle ── */
+  pxToggle.addEventListener('click', () => {
+    pxMode = !pxMode;
+    pxToggle.classList.toggle('active', pxMode);
+    coordHud.classList.toggle('visible', pxMode);
+    updateHudSel();
+  });
+
+  /* ── Grid drawing ── */
+  function drawGrid() {
+    if (!snapActive || !naturalW || !naturalH) {
+      gridCanvas.classList.remove('visible');
+      return;
+    }
+
+    const rect = previewImg.getBoundingClientRect();
+    const W = rect.width;
+    const H = rect.height;
+
+    gridCanvas.width  = W;
+    gridCanvas.height = H;
+    gridCanvas.style.width  = W + 'px';
+    gridCanvas.style.height = H + 'px';
+    gridCanvas.classList.add('visible');
+
+    const ctx = gridCanvas.getContext('2d');
+    ctx.clearRect(0, 0, W, H);
+
+    const stepX = snapSize / naturalW * W;
+    const stepY = snapSize / naturalH * H;
+
+    ctx.strokeStyle = 'rgba(255,102,153,0.12)';
+    ctx.lineWidth = 0.5;
+
+    for (let x = 0; x <= W; x += stepX) {
+      ctx.beginPath();
+      ctx.moveTo(Math.round(x) + 0.5, 0);
+      ctx.lineTo(Math.round(x) + 0.5, H);
+      ctx.stroke();
+    }
+    for (let y = 0; y <= H; y += stepY) {
+      ctx.beginPath();
+      ctx.moveTo(0, Math.round(y) + 0.5);
+      ctx.lineTo(W, Math.round(y) + 0.5);
+      ctx.stroke();
+    }
+  }
+
+  // Redraw grid on resize
+  const ro = new ResizeObserver(() => {
+    if (imageURL) drawGrid();
+  });
+  ro.observe(canvasArea);
+
+  /* ── Export ── */
+  exportOpenBtn.addEventListener('click', () => {
+    if (!bbcodeOutput.value) { alert('Nothing to export — generate some BBCode first.'); return; }
+    exportModal.classList.add('open');
+  });
+  exportModalClose.addEventListener('click', () => exportModal.classList.remove('open'));
+  exportModal.addEventListener('mousedown', (e) => {
+    if (e.target === exportModal) exportModal.classList.remove('open');
+  });
+
+  function exportFilename(ext) {
+    const now = new Date();
+    const pad = n => String(n).padStart(2, '0');
+    const date = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+    const time = `${pad(now.getHours())}-${pad(now.getMinutes())}`;
+    const tag = exportNameInput.value.trim().replace(/[^a-zA-Z0-9_-]/g, '_');
+    return `imagemap_${date}_${time}${tag ? '_' + tag : ''}.${ext}`;
+  }
+
+  function downloadBlob(content, filename, type) {
+    const blob = new Blob([content], { type });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 500);
+  }
+
+  exportTxtBtn.addEventListener('click', () => {
+    if (!bbcodeOutput.value) return;
+    downloadBlob(bbcodeOutput.value, exportFilename('txt'), 'text/plain');
+  });
+
+  exportJsonBtn.addEventListener('click', () => {
+    if (!imageURL) return;
+    const payload = {
+      version: 1,
+      exported: new Date().toISOString(),
+      imageURL,
+      boxes: JSON.parse(JSON.stringify(boxes)),
+      nextId,
+    };
+    downloadBlob(JSON.stringify(payload, null, 2), exportFilename('json'), 'application/json');
+  });
+
+  /* ── Save / load modal ── */
+  const STORAGE_KEY = 'osu_imagemap_projects';
+
+  function getProjects() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
+    catch { return []; }
+  }
+
+  function saveProjects(arr) {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(arr)); } catch {}
+  }
+
+  saveBtn.addEventListener('click', () => {
+    renderSavesGrid();
+    modalBackdrop.classList.add('open');
+  });
+
+  modalCloseBtn.addEventListener('click', () => modalBackdrop.classList.remove('open'));
+  modalBackdrop.addEventListener('mousedown', (e) => {
+    if (e.target === modalBackdrop) modalBackdrop.classList.remove('open');
+  });
+
+  saveProjectBtn.addEventListener('click', () => {
+    if (!imageURL) { alert('Nothing to save — load an image first.'); return; }
+    const name = saveNameInput.value.trim() || `Project ${new Date().toLocaleDateString()}`;
+    const projects = getProjects();
+    const entry = {
+      id: Date.now(),
+      name,
+      imageURL,
+      boxes: JSON.parse(JSON.stringify(boxes)),
+      nextId,
+      saved: new Date().toISOString(),
+    };
+    projects.unshift(entry);
+    saveProjects(projects);
+    saveNameInput.value = '';
+    renderSavesGrid();
+  });
+
+  function renderSavesGrid() {
+    const projects = getProjects();
+    savesGrid.innerHTML = '';
+
+    if (!projects.length) {
+      savesGrid.innerHTML = '<div class="no-saves">No saved projects yet.</div>';
+      return;
+    }
+
+    projects.forEach(proj => {
+      const card = document.createElement('div');
+      card.className = 'save-card';
+
+      // Thumbnail
+      const thumb = document.createElement('div');
+      thumb.className = 'save-card-thumb';
+      if (proj.imageURL) {
+        const img = document.createElement('img');
+        img.src = proj.imageURL;
+        img.onerror = () => { thumb.textContent = '⬚'; };
+        thumb.appendChild(img);
+      } else {
+        thumb.textContent = '⬚';
+      }
+      card.appendChild(thumb);
+
+      // Info
+      const info = document.createElement('div');
+      info.className = 'save-card-info';
+
+      const nameEl = document.createElement('div');
+      nameEl.className = 'save-card-name';
+      nameEl.textContent = proj.name;
+      info.appendChild(nameEl);
+
+      const meta = document.createElement('div');
+      meta.className = 'save-card-meta';
+      const date = new Date(proj.saved).toLocaleString();
+      meta.textContent = `${proj.boxes.length} box${proj.boxes.length !== 1 ? 'es' : ''} · ${date}`;
+      info.appendChild(meta);
+
+      card.appendChild(info);
+
+      // Actions
+      const actions = document.createElement('div');
+      actions.className = 'save-card-actions';
+
+      const loadBtnEl = document.createElement('button');
+      loadBtnEl.className = 'load-btn';
+      loadBtnEl.textContent = 'Load';
+      loadBtnEl.addEventListener('click', () => {
+        loadProject(proj);
+        modalBackdrop.classList.remove('open');
+      });
+      actions.appendChild(loadBtnEl);
+
+      const delBtnEl = document.createElement('button');
+      delBtnEl.className = 'del-save-btn';
+      delBtnEl.textContent = 'Del';
+      delBtnEl.addEventListener('click', () => {
+        const updated = getProjects().filter(p => p.id !== proj.id);
+        saveProjects(updated);
+        renderSavesGrid();
+      });
+      actions.appendChild(delBtnEl);
+
+      card.appendChild(actions);
+      savesGrid.appendChild(card);
+    });
+  }
+
+  function loadProject(proj) {
+    imageURL = proj.imageURL;
+    boxes = proj.boxes.map(b => ({ ...b }));
+    nextId = proj.nextId || (Math.max(0, ...proj.boxes.map(b => b.id)) + 1);
+    selectedId = null;
+    boxProps.style.display = 'none';
+    imgInput.value = proj.imageURL;
+    loadImage(proj.imageURL);
+    renderBoxList();
+    generateBBCode();
+  }
+
+  /* ── Window resize: redraw grid ── */
+  window.addEventListener('resize', () => {
+    if (snapActive && naturalW) drawGrid();
+  });
 
 })();
 </script>
